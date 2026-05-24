@@ -8,6 +8,7 @@ coverage/
 .claude
 .mcp.json
 
+.next/
 dist
 v8-compile-cache-0
 
