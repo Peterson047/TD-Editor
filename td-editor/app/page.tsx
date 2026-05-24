@@ -4,20 +4,16 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import Toolbar from "@/components/Toolbar";
 import Editor from "@/components/Editor";
 import Preview from "@/components/Preview";
+import VisualBuilder from "@/components/VisualBuilder";
 import { useMermaid } from "@/lib/useMermaid";
+import { useGraphHistory } from "@/lib/useGraphHistory";
+import { GraphState, autoLayout, graphToMermaid, mergeMermaidWithPositions, mermaidToGraph } from "@/lib/graph";
 
 const defaultCode = `graph TD
   A[Início] --> B{Decisão}
   B -->|Sim| C[Ação 1]
   B -->|Não| D[Ação 2]
-  C --> E[Fim]
-  D --> E
-
-  style A fill:#1e293b,stroke:#3b82f6,stroke-width:2px,color:#f8fafc
-  style B fill:#334155,stroke:#f59e0b,stroke-width:2px,color:#f8fafc
-  style C fill:#1e293b,stroke:#10b981,stroke-width:2px,color:#f8fafc
-  style D fill:#1e293b,stroke:#ef4444,stroke-width:2px,color:#f8fafc
-  style E fill:#0f172a,stroke:#64748b,stroke-width:2px,color:#94a3b8`;
+  C --> E[Fim]`;
 
 const MIN_LEFT_PCT = 25;
 const MAX_LEFT_PCT = 75;
@@ -25,9 +21,23 @@ const MAX_LEFT_PCT = 75;
 export default function Home() {
   const [code, setCode] = useState(defaultCode);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [mode, setMode] = useState<"code" | "visual">("code");
   const [leftWidthPct, setLeftWidthPct] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const {
+    state: graphState,
+    push: pushGraph,
+    beginBatch,
+    endBatch,
+    commit,
+    undo,
+    redo,
+    canUndo,
+    canRedo,
+  } = useGraphHistory(autoLayout(mermaidToGraph(defaultCode)));
+
   const { containerRef: previewContainerRef, render, exportSVG, exportPNG } = useMermaid(theme);
 
   useEffect(() => {
@@ -36,6 +46,32 @@ export default function Home() {
     }, 300);
     return () => clearTimeout(timer);
   }, [code, render]);
+
+  useEffect(() => {
+    if (mode === "visual") {
+      const newCode = graphToMermaid(graphState);
+      if (newCode !== code) {
+        setCode(newCode);
+      }
+    }
+  }, [graphState, mode]);
+
+  const handleGraphChange = useCallback(
+    (updater: GraphState | ((prev: GraphState) => GraphState)) => {
+      pushGraph(updater);
+    },
+    [pushGraph]
+  );
+
+  const handleModeChange = useCallback(
+    (newMode: "code" | "visual") => {
+      if (newMode === "visual" && mode !== "visual") {
+        pushGraph((prev) => mergeMermaidWithPositions(code, prev));
+      }
+      setMode(newMode);
+    },
+    [code, mode, pushGraph]
+  );
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
@@ -73,7 +109,6 @@ export default function Home() {
   const handleExportSVG = useCallback(() => {
     const svg = exportSVG();
     if (!svg) return;
-
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -88,7 +123,6 @@ export default function Home() {
   const handleExportPNG = useCallback(async () => {
     const dataUrl = await exportPNG();
     if (!dataUrl) return;
-
     const a = document.createElement("a");
     a.href = dataUrl;
     a.download = `diagrama-td-${Date.now()}.png`;
@@ -104,13 +138,18 @@ export default function Home() {
         onExportPNG={handleExportPNG}
         onThemeChange={setTheme}
         currentTheme={theme}
+        mode={mode}
+        onModeChange={handleModeChange}
+        onUndo={undo}
+        onRedo={redo}
+        canUndo={canUndo}
+        canRedo={canRedo}
       />
       <main
         ref={containerRef}
         className="flex flex-1 overflow-hidden relative"
         style={{ backgroundColor: "var(--bg-primary)" }}
       >
-        {/* Painel esquerdo — Editor */}
         <div
           className="flex flex-col border-r"
           style={{
@@ -119,10 +158,23 @@ export default function Home() {
             borderColor: "var(--border)",
           }}
         >
-          <Editor value={code} onChange={setCode} />
+          {mode === "code" ? (
+            <Editor value={code} onChange={setCode} />
+          ) : (
+            <VisualBuilder
+              state={graphState}
+              onChange={handleGraphChange}
+              onUndo={undo}
+              onRedo={redo}
+              canUndo={canUndo}
+              canRedo={canRedo}
+              beginBatch={beginBatch}
+              endBatch={endBatch}
+              commit={commit}
+            />
+          )}
         </div>
 
-        {/* Divisor arrastável */}
         <div
           onMouseDown={handleMouseDown}
           className={`w-1.5 shrink-0 z-10 relative transition-colors duration-150 ${
@@ -137,7 +189,6 @@ export default function Home() {
           />
         </div>
 
-        {/* Painel direito — Preview */}
         <div className="flex-1 min-w-[280px] relative">
           <Preview containerRef={previewContainerRef} />
         </div>

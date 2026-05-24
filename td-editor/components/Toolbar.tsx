@@ -7,6 +7,12 @@ interface ToolbarProps {
   onExportPNG: () => void;
   onThemeChange: (theme: "dark" | "light") => void;
   currentTheme: "dark" | "light";
+  mode: "code" | "visual";
+  onModeChange: (mode: "code" | "visual") => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 export default function Toolbar({
@@ -14,6 +20,12 @@ export default function Toolbar({
   onExportPNG,
   onThemeChange,
   currentTheme,
+  mode,
+  onModeChange,
+  onUndo,
+  onRedo,
+  canUndo,
+  canRedo,
 }: ToolbarProps) {
   const [isExporting, setIsExporting] = useState(false);
 
@@ -64,6 +76,72 @@ export default function Toolbar({
         >
           TD Graph Editor
         </h1>
+
+        {/* Mode toggle */}
+        <div
+          className="flex rounded-lg p-0.5 border ml-4"
+          style={{
+            backgroundColor: "var(--bg-tertiary)",
+            borderColor: "var(--border)",
+          }}
+        >
+          <button
+            onClick={() => onModeChange("code")}
+            className="px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5"
+            style={
+              mode === "code"
+                ? {
+                    backgroundColor: "var(--bg-quaternary)",
+                    color: "var(--text-primary)",
+                  }
+                : { color: "var(--text-muted)" }
+            }
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="16 18 22 12 16 6" /><polyline points="8 6 2 12 8 18" /></svg>
+            Código
+          </button>
+          <button
+            onClick={() => onModeChange("visual")}
+            className="px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5"
+            style={
+              mode === "visual"
+                ? {
+                    backgroundColor: "var(--bg-quaternary)",
+                    color: "var(--text-primary)",
+                  }
+                : { color: "var(--text-muted)" }
+            }
+          >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7" /><rect x="14" y="3" width="7" height="7" /><rect x="14" y="14" width="7" height="7" /><rect x="3" y="14" width="7" height="7" /></svg>
+            Visual
+          </button>
+        </div>
+
+        {/* Undo / Redo */}
+        <div className="flex items-center gap-0.5 ml-2">
+          <button
+            onClick={onUndo}
+            disabled={!canUndo}
+            title="Desfazer (Ctrl+Z)"
+            className="w-7 h-7 flex items-center justify-center rounded-md transition-all disabled:opacity-30"
+            style={{ color: "var(--text-secondary)" }}
+            onMouseEnter={(e) => { if (canUndo) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--bg-tertiary)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7v6h6" /><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" /></svg>
+          </button>
+          <button
+            onClick={onRedo}
+            disabled={!canRedo}
+            title="Refazer (Ctrl+Y)"
+            className="w-7 h-7 flex items-center justify-center rounded-md transition-all disabled:opacity-30"
+            style={{ color: "var(--text-secondary)" }}
+            onMouseEnter={(e) => { if (canRedo) (e.currentTarget as HTMLButtonElement).style.backgroundColor = "var(--bg-tertiary)"; }}
+            onMouseLeave={(e) => { (e.currentTarget as HTMLButtonElement).style.backgroundColor = "transparent"; }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 7v6h-6" /><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3L21 13" /></svg>
+          </button>
+        </div>
       </div>
 
       <div className="flex items-center gap-2">
@@ -76,20 +154,14 @@ export default function Toolbar({
         >
           <button
             onClick={() => onThemeChange("dark")}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
-              currentTheme === "dark"
-                ? "shadow-sm"
-                : ""
-            }`}
+            className="px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5"
             style={
               currentTheme === "dark"
                 ? {
                     backgroundColor: "var(--bg-quaternary)",
                     color: "var(--text-primary)",
                   }
-                : {
-                    color: "var(--text-muted)",
-                  }
+                : { color: "var(--text-muted)" }
             }
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" /></svg>
@@ -97,20 +169,14 @@ export default function Toolbar({
           </button>
           <button
             onClick={() => onThemeChange("light")}
-            className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5 ${
-              currentTheme === "light"
-                ? "shadow-sm"
-                : ""
-            }`}
+            className="px-3 py-1.5 rounded-md text-xs font-medium transition-all flex items-center gap-1.5"
             style={
               currentTheme === "light"
                 ? {
                     backgroundColor: "var(--bg-quaternary)",
                     color: "var(--text-primary)",
                   }
-                : {
-                    color: "var(--text-muted)",
-                  }
+                : { color: "var(--text-muted)" }
             }
           >
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4" /><path d="M12 2v2" /><path d="M12 20v2" /><path d="m4.93 4.93 1.41 1.41" /><path d="m17.66 17.66 1.41 1.41" /><path d="M2 12h2" /><path d="M20 12h2" /><path d="m6.34 17.66-1.41 1.41" /><path d="m19.07 4.93-1.41 1.41" /></svg>
