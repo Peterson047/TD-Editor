@@ -43,7 +43,7 @@ export default function Home() {
   useEffect(() => {
     const timer = setTimeout(() => {
       render(code);
-    }, 300);
+    }, 200);
     return () => clearTimeout(timer);
   }, [code, render]);
 
@@ -54,7 +54,7 @@ export default function Home() {
         setCode(newCode);
       }
     }
-  }, [graphState, mode]);
+  }, [graphState, mode, code]);
 
   const handleGraphChange = useCallback(
     (updater: GraphState | ((prev: GraphState) => GraphState)) => {
@@ -132,7 +132,7 @@ export default function Home() {
   }, [exportPNG]);
 
   return (
-    <div className={`flex flex-col h-screen ${theme === "light" ? "theme-light" : ""}`}>
+    <div className={`flex h-screen flex-col ${theme === "light" ? "theme-light" : ""}`}>
       <Toolbar
         onExportSVG={handleExportSVG}
         onExportPNG={handleExportPNG}
@@ -147,7 +147,7 @@ export default function Home() {
       />
       <main
         ref={containerRef}
-        className="flex flex-1 overflow-hidden relative"
+        className="relative flex flex-1 overflow-hidden"
         style={{ backgroundColor: "var(--bg-primary)" }}
       >
         <div
@@ -177,19 +177,19 @@ export default function Home() {
 
         <div
           onMouseDown={handleMouseDown}
-          className={`w-1.5 shrink-0 z-10 relative transition-colors duration-150 ${
+          className={`relative z-10 w-1.5 shrink-0 transition-colors duration-150 ${
             isDragging ? "bg-accent-500" : "bg-transparent hover:bg-accent-500/50"
           }`}
           style={{ cursor: "col-resize" }}
         >
           <div
-            className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-1 h-8 rounded-full transition-colors duration-150 ${
+            className={`absolute left-1/2 top-1/2 h-8 w-1 -translate-x-1/2 -translate-y-1/2 rounded-full transition-colors duration-150 ${
               isDragging ? "bg-accent-400" : "bg-surface-600 hover:bg-accent-400"
             }`}
           />
         </div>
 
-        <div className="flex-1 min-w-[280px] relative">
+        <div className="relative min-w-[280px] flex-1">
           <Preview containerRef={previewContainerRef} />
         </div>
       </main>

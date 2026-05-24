@@ -13,30 +13,30 @@ export default function Preview({ containerRef }: PreviewProps) {
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0, translateX: 0, translateY: 0 });
 
-  const handleWheel = useCallback(
-    (e: WheelEvent) => {
-      if (!e.ctrlKey && !e.metaKey) return;
-      e.preventDefault();
-      const delta = e.deltaY > 0 ? -0.1 : 0.1;
-      setScale((prev) => {
-        const next = Math.min(Math.max(prev + delta, 0.2), 4);
-        return Math.round(next * 10) / 10;
-      });
-    },
-    []
-  );
-
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0 && e.button !== 1) return;
+  const handleWheel = useCallback((e: WheelEvent) => {
+    if (!e.ctrlKey && !e.metaKey) return;
     e.preventDefault();
-    setIsPanning(true);
-    panStart.current = {
-      x: e.clientX,
-      y: e.clientY,
-      translateX: translate.x,
-      translateY: translate.y,
-    };
-  }, [translate]);
+    const delta = e.deltaY > 0 ? -0.1 : 0.1;
+    setScale((prev) => {
+      const next = Math.min(Math.max(prev + delta, 0.2), 20);
+      return Math.round(next * 10) / 10;
+    });
+  }, []);
+
+  const handleMouseDown = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.button !== 0 && e.button !== 1) return;
+      e.preventDefault();
+      setIsPanning(true);
+      panStart.current = {
+        x: e.clientX,
+        y: e.clientY,
+        translateX: translate.x,
+        translateY: translate.y,
+      };
+    },
+    [translate]
+  );
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
@@ -60,7 +60,7 @@ export default function Preview({ containerRef }: PreviewProps) {
   }, []);
 
   const zoomIn = useCallback(() => {
-    setScale((prev) => Math.min(Math.round((prev + 0.2) * 10) / 10, 4));
+    setScale((prev) => Math.min(Math.round((prev + 0.2) * 10) / 10, 20));
   }, []);
 
   const zoomOut = useCallback(() => {
@@ -80,47 +80,59 @@ export default function Preview({ containerRef }: PreviewProps) {
   }, [handleWheel]);
 
   return (
-    <div className="flex flex-col h-full" style={{ backgroundColor: "var(--preview-bg)" }}>
+    <div className="flex h-full flex-col" style={{ backgroundColor: "var(--preview-bg)" }}>
       <div
-        className="h-9 flex items-center justify-between px-4 border-b shrink-0"
+        className="flex h-9 shrink-0 items-center justify-between border-b px-4"
         style={{ borderColor: "var(--border)" }}
       >
-        <span
-          className="text-[11px] font-medium uppercase tracking-wider"
-          style={{ color: "var(--text-muted)" }}
-        >
+        <span className="text-[11px] font-medium uppercase tracking-wider" style={{ color: "var(--text-muted)" }}>
           Preview
         </span>
         <div className="flex items-center gap-1">
           <button
             onClick={zoomOut}
-            className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="flex h-6 w-6 items-center justify-center rounded transition-colors hover:bg-black/10 dark:hover:bg-white/10"
             style={{ color: "var(--text-secondary)" }}
             title="Zoom out"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </button>
-          <span
-            className="text-[11px] font-mono w-10 text-center select-none"
-            style={{ color: "var(--text-muted)" }}
-          >
+          <span className="w-10 select-none text-center font-mono text-[11px]" style={{ color: "var(--text-muted)" }}>
             {Math.round(scale * 100)}%
           </span>
           <button
             onClick={zoomIn}
-            className="w-6 h-6 flex items-center justify-center rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="flex h-6 w-6 items-center justify-center rounded transition-colors hover:bg-black/10 dark:hover:bg-white/10"
             style={{ color: "var(--text-secondary)" }}
             title="Zoom in"
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            >
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </button>
-          <div
-            className="w-px h-4 mx-1"
-            style={{ backgroundColor: "var(--border)" }}
-          />
+          <div className="mx-1 h-4 w-px" style={{ backgroundColor: "var(--border)" }} />
           <button
             onClick={resetView}
-            className="text-[11px] font-medium px-2 py-0.5 rounded hover:bg-black/10 dark:hover:bg-white/10 transition-colors"
+            className="rounded px-2 py-0.5 text-[11px] font-medium transition-colors hover:bg-black/10 dark:hover:bg-white/10"
             style={{ color: "var(--text-secondary)" }}
             title="Reset view"
           >
@@ -130,7 +142,7 @@ export default function Preview({ containerRef }: PreviewProps) {
       </div>
       <div
         ref={wrapperRef}
-        className={`flex-1 overflow-hidden flex items-center justify-center select-none ${isPanning ? "is-panning" : "preview-container"}`}
+        className={`flex flex-1 select-none items-center justify-center overflow-hidden ${isPanning ? "is-panning" : "preview-container"}`}
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
@@ -144,14 +156,11 @@ export default function Preview({ containerRef }: PreviewProps) {
             willChange: "transform",
           }}
         >
-          <div
-            ref={containerRef}
-            className="animate-fade-in"
-          />
+          <div ref={containerRef} className="animate-fade-in" />
         </div>
       </div>
       <div
-        className="absolute bottom-3 right-3 text-[10px] px-2 py-1 rounded-md pointer-events-none opacity-60"
+        className="pointer-events-none absolute bottom-3 right-3 rounded-md px-2 py-1 text-[10px] opacity-60"
         style={{
           backgroundColor: "var(--bg-tertiary)",
           color: "var(--text-muted)",

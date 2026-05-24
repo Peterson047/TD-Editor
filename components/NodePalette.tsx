@@ -20,14 +20,14 @@ interface NodePaletteProps {
 export default function NodePalette({ onAdd }: NodePaletteProps) {
   return (
     <div
-      className="flex items-center gap-1 px-3 h-9 border-b"
+      className="flex h-9 items-center gap-1 border-b px-3"
       style={{
         borderColor: "var(--border)",
         backgroundColor: "var(--bg-secondary)",
       }}
     >
       <span
-        className="text-[10px] font-medium uppercase tracking-wider mr-2 shrink-0"
+        className="mr-2 shrink-0 text-[10px] font-medium uppercase tracking-wider"
         style={{ color: "var(--text-muted)" }}
       >
         Adicionar
@@ -37,7 +37,7 @@ export default function NodePalette({ onAdd }: NodePaletteProps) {
           key={type}
           onClick={() => onAdd(type)}
           title={label}
-          className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium transition-all border"
+          className="flex items-center gap-1 rounded border px-2 py-1 text-[11px] font-medium transition-all"
           style={{
             color: "var(--text-secondary)",
             borderColor: "transparent",

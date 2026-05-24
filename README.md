@@ -21,7 +21,7 @@ Editor visual e de código para diagramas de fluxo e grafos, com renderização 
 
 ### Preview
 - Renderização Mermaid em tempo real
-- **Zoom** (0.2× – 4×) com Ctrl+scroll
+- **Zoom** (0.2× – 10×) com Ctrl+scroll
 - **Pan** arrastando o canvas
 - Temas **dark** e **light** sincronizados com a UI
 

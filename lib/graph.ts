@@ -79,17 +79,28 @@ export function createNode(type: NodeType, x: number, y: number, text?: string):
 export function nodeToMermaid(node: GraphNode): string {
   const t = node.text.replace(/\n/g, "<br/>");
   switch (node.type) {
-    case "rect": return `${node.id}["${t}"]`;
-    case "rounded": return `${node.id}("${t}")`;
-    case "circle": return `${node.id}(("${t}"))`;
-    case "stadium": return `${node.id}(["${t}"])`;
-    case "subroutine": return `${node.id}[["${t}"]]`;
-    case "cylinder": return `${node.id}[("${t}")]`;
-    case "diamond": return `${node.id}{"${t}"}`;
-    case "hexagon": return `${node.id}{{"${t}"}}`;
-    case "parallelogram": return `${node.id}["${t}"/]`;
-    case "trapezoid": return `${node.id}["${t}"\\]`;
-    default: return `${node.id}["${t}"]`;
+    case "rect":
+      return `${node.id}["${t}"]`;
+    case "rounded":
+      return `${node.id}("${t}")`;
+    case "circle":
+      return `${node.id}(("${t}"))`;
+    case "stadium":
+      return `${node.id}(["${t}"])`;
+    case "subroutine":
+      return `${node.id}[["${t}"]]`;
+    case "cylinder":
+      return `${node.id}[("${t}")]`;
+    case "diamond":
+      return `${node.id}{"${t}"}`;
+    case "hexagon":
+      return `${node.id}{{"${t}"}}`;
+    case "parallelogram":
+      return `${node.id}[/${t}/]`;
+    case "trapezoid":
+      return `${node.id}[/${t}\\]`;
+    default:
+      return `${node.id}["${t}"]`;
   }
 }
 
@@ -120,26 +131,23 @@ export function graphToMermaid(state: GraphState): string {
 }
 
 /** Get the absolute canvas position of a specific handle side */
-export function getHandlePoint(
-  node: GraphNode,
-  side: HandleSide
-): { x: number; y: number } {
+export function getHandlePoint(node: GraphNode, side: HandleSide): { x: number; y: number } {
   const cx = node.x + node.width / 2;
   const cy = node.y + node.height / 2;
   switch (side) {
-    case "top": return { x: cx, y: node.y };
-    case "bottom": return { x: cx, y: node.y + node.height };
-    case "left": return { x: node.x, y: cy };
-    case "right": return { x: node.x + node.width, y: cy };
+    case "top":
+      return { x: cx, y: node.y };
+    case "bottom":
+      return { x: cx, y: node.y + node.height };
+    case "left":
+      return { x: node.x, y: cy };
+    case "right":
+      return { x: node.x + node.width, y: cy };
   }
 }
 
 /** Calculate the anchor point on the node's border facing the target */
-export function getAnchorPoint(
-  node: GraphNode,
-  targetX: number,
-  targetY: number
-): { x: number; y: number } {
+export function getAnchorPoint(node: GraphNode, targetX: number, targetY: number): { x: number; y: number } {
   const cx = node.x + node.width / 2;
   const cy = node.y + node.height / 2;
   const dx = targetX - cx;
@@ -194,8 +202,8 @@ export function getAnchorPoint(
         const edgeDy = v2.y - v1.y;
         const denom = dx * edgeDy - dy * edgeDx;
         if (Math.abs(denom) < 1e-10) continue;
-        const tEdge = ((v1.x * edgeDy - v1.y * edgeDx) / denom);
-        const s = ((v1.x * dy - v1.y * dx) / denom);
+        const tEdge = (v1.x * edgeDy - v1.y * edgeDx) / denom;
+        const s = (v1.x * dy - v1.y * dx) / denom;
         if (tEdge > 0 && s >= -1e-10 && s <= 1 + 1e-10) {
           bestT = Math.min(bestT, tEdge);
         }
@@ -207,10 +215,9 @@ export function getAnchorPoint(
     case "parallelogram": {
       // Parallelogram skewed -12deg: approximate with bounding box is fine
       // For better accuracy, we could transform the ray by inverse skew
-      t = Math.min(
-        halfW / (Math.abs(dx) || Infinity),
-        halfH / (Math.abs(dy) || Infinity)
-      );
+      const tx = dx === 0 ? Infinity : halfW / Math.abs(dx);
+      const ty = dy === 0 ? Infinity : halfH / Math.abs(dy);
+      t = Math.min(tx, ty);
       break;
     }
 
@@ -234,8 +241,8 @@ export function getAnchorPoint(
         const edgeDy = v2.y - v1.y;
         const denom = dx * edgeDy - dy * edgeDx;
         if (Math.abs(denom) < 1e-10) continue;
-        const tEdge = ((v1.x * edgeDy - v1.y * edgeDx) / denom);
-        const s = ((v1.x * dy - v1.y * dx) / denom);
+        const tEdge = (v1.x * edgeDy - v1.y * edgeDx) / denom;
+        const s = (v1.x * dy - v1.y * dx) / denom;
         if (tEdge > 0 && s >= -1e-10 && s <= 1 + 1e-10) {
           bestT = Math.min(bestT, tEdge);
         }
@@ -247,10 +254,9 @@ export function getAnchorPoint(
     default: {
       // Rectangle, rounded, stadium, subroutine, cylinder
       // Intersection with bounding box
-      t = Math.min(
-        halfW / (Math.abs(dx) || Infinity),
-        halfH / (Math.abs(dy) || Infinity)
-      );
+      const tx = dx === 0 ? Infinity : halfW / Math.abs(dx);
+      const ty = dy === 0 ? Infinity : halfH / Math.abs(dy);
+      t = Math.min(tx, ty);
       break;
     }
   }
@@ -261,10 +267,7 @@ export function getAnchorPoint(
   };
 }
 
-export function mergeMermaidWithPositions(
-  code: string,
-  existing: GraphState
-): GraphState {
+export function mergeMermaidWithPositions(code: string, existing: GraphState): GraphState {
   const parsed = mermaidToGraph(code);
   const positionMap = new Map(existing.nodes.map((n) => [n.id, { x: n.x, y: n.y }]));
 
@@ -317,8 +320,11 @@ export function autoLayout(state: GraphState): GraphState {
 
   // BFS to assign levels
   let qi = 0;
+  const processed = new Set<string>();
   while (qi < queue.length) {
     const id = queue[qi++];
+    if (processed.has(id)) continue;
+    processed.add(id);
     const lvl = levels.get(id) ?? 0;
     for (const next of outgoing.get(id) ?? []) {
       const current = levels.get(next);
@@ -366,49 +372,53 @@ export function autoLayout(state: GraphState): GraphState {
   };
 }
 
+function stripQuotes(text: string): string {
+  return text.replace(/^["']|["']$/g, "");
+}
+
 // Parse inline node definition from a string like A[Text], B{Text}, C((Text)), etc.
 function parseInlineNode(str: string): { id: string; text: string; type: NodeType } | null {
   let m: RegExpMatchArray | null;
 
   // trapezoid: A[/Text\]
   m = str.match(/^(\w+)\[\/(.*?)\\\]$/);
-  if (m) return { id: m[1], text: m[2], type: "trapezoid" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "trapezoid" };
 
   // parallelogram: A[/Text/]
   m = str.match(/^(\w+)\[\/(.*?)\/\]$/);
-  if (m) return { id: m[1], text: m[2], type: "parallelogram" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "parallelogram" };
 
   // hexagon: A{{Text}}
   m = str.match(/^(\w+)\{\{(.*?)\}\}$/);
-  if (m) return { id: m[1], text: m[2], type: "hexagon" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "hexagon" };
 
   // diamond: A{Text}
   m = str.match(/^(\w+)\{(.*?)\}$/);
-  if (m) return { id: m[1], text: m[2], type: "diamond" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "diamond" };
 
   // cylinder: A[(Text)]
   m = str.match(/^(\w+)\[\((.*?)\)\]$/);
-  if (m) return { id: m[1], text: m[2], type: "cylinder" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "cylinder" };
 
   // subroutine: A[[Text]]
   m = str.match(/^(\w+)\[\[(.*?)\]\]$/);
-  if (m) return { id: m[1], text: m[2], type: "subroutine" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "subroutine" };
 
   // stadium: A([Text])
   m = str.match(/^(\w+)\(\[(.*?)\]\)$/);
-  if (m) return { id: m[1], text: m[2], type: "stadium" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "stadium" };
 
   // circle: A((Text))
   m = str.match(/^(\w+)\(\((.*?)\)\)$/);
-  if (m) return { id: m[1], text: m[2], type: "circle" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "circle" };
 
   // rounded: A(Text)
   m = str.match(/^(\w+)\((.*?)\)$/);
-  if (m) return { id: m[1], text: m[2], type: "rounded" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "rounded" };
 
   // rect: A[Text]
   m = str.match(/^(\w+)\[(.*?)\]$/);
-  if (m) return { id: m[1], text: m[2], type: "rect" };
+  if (m) return { id: m[1], text: stripQuotes(m[2]), type: "rect" };
 
   // plain id: A
   m = str.match(/^(\w+)$/);
@@ -441,9 +451,7 @@ export function mermaidToGraph(code: string): GraphState {
     if (line.startsWith("graph ") || line.startsWith("flowchart ")) continue;
 
     // Edge with optional inline definitions and label: A[Text] -->|label| B{Text}
-    const edgeMatch = line.match(
-      /^(.+?)\s*-->(?:\s*\|([^|]*)\|\s*)?\s*(.+)$/
-    );
+    const edgeMatch = line.match(/^(.+?)\s*-->(?:\s*\|([^|]*)\|\s*)?\s*(.+)$/);
     if (edgeMatch) {
       const left = edgeMatch[1].trim();
       const right = edgeMatch[3].trim();

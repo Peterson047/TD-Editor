@@ -19,33 +19,28 @@ export function useGraphHistory(initial: GraphState) {
   // batchDepth > 0 means we're in a drag/session — don't push to past
   const batchDepth = useRef(0);
 
-  const push = useCallback(
-    (newState: GraphState | ((prev: GraphState) => GraphState)) => {
-      setHistory((prev) => {
-        const nextState =
-          typeof newState === "function"
-            ? (newState as (prev: GraphState) => GraphState)(prev.present)
-            : newState;
+  const push = useCallback((newState: GraphState | ((prev: GraphState) => GraphState)) => {
+    setHistory((prev) => {
+      const nextState =
+        typeof newState === "function" ? (newState as (prev: GraphState) => GraphState)(prev.present) : newState;
 
-        // During batch, just replace present without stacking
-        if (batchDepth.current > 0) {
-          return { ...prev, present: nextState };
-        }
+      // During batch, just replace present without stacking
+      if (batchDepth.current > 0) {
+        return { ...prev, present: nextState };
+      }
 
-        // Don't push if identical
-        if (JSON.stringify(nextState) === JSON.stringify(prev.present)) {
-          return prev;
-        }
+      // Don't push if identical
+      if (JSON.stringify(nextState) === JSON.stringify(prev.present)) {
+        return prev;
+      }
 
-        return {
-          past: [...prev.past, prev.present].slice(-50),
-          present: nextState,
-          future: [],
-        };
-      });
-    },
-    []
-  );
+      return {
+        past: [...prev.past, prev.present].slice(-50),
+        present: nextState,
+        future: [],
+      };
+    });
+  }, []);
 
   const beginBatch = useCallback(() => {
     batchDepth.current += 1;

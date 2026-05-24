@@ -12,9 +12,7 @@ const svgStyles = (theme: "dark" | "light") => `
   .node polygon,
   .node path {
     filter: ${
-      theme === "dark"
-        ? "drop-shadow(0 2px 4px rgba(0,0,0,0.4))"
-        : "drop-shadow(0 2px 6px rgba(15,23,42,0.08))"
+      theme === "dark" ? "drop-shadow(0 2px 4px rgba(0,0,0,0.4))" : "drop-shadow(0 2px 6px rgba(15,23,42,0.08))"
     };
     stroke-width: 1.5px !important;
     transition: all 0.2s ease;
@@ -25,9 +23,7 @@ const svgStyles = (theme: "dark" | "light") => `
   .node:hover polygon,
   .node:hover path {
     filter: ${
-      theme === "dark"
-        ? "drop-shadow(0 4px 8px rgba(0,0,0,0.5))"
-        : "drop-shadow(0 4px 12px rgba(15,23,42,0.12))"
+      theme === "dark" ? "drop-shadow(0 4px 8px rgba(0,0,0,0.5))" : "drop-shadow(0 4px 12px rgba(15,23,42,0.12))"
     };
     stroke-width: 2px !important;
   }
@@ -47,11 +43,7 @@ const svgStyles = (theme: "dark" | "light") => `
     stroke-width: 1px !important;
     rx: 4px !important;
     ry: 4px !important;
-    filter: ${
-      theme === "dark"
-        ? "drop-shadow(0 1px 2px rgba(0,0,0,0.3))"
-        : "drop-shadow(0 1px 2px rgba(0,0,0,0.05))"
-    };
+    filter: ${theme === "dark" ? "drop-shadow(0 1px 2px rgba(0,0,0,0.3))" : "drop-shadow(0 1px 2px rgba(0,0,0,0.05))"};
   }
   text {
     font-family: 'Inter', system-ui, sans-serif !important;
@@ -209,7 +201,16 @@ export function useMermaid(theme: "dark" | "light") {
     if (!containerRef.current) return null;
     const svg = containerRef.current.querySelector("svg");
     if (!svg) return null;
-    return svg.outerHTML;
+    const serializer = new XMLSerializer();
+    let svgText = serializer.serializeToString(svg);
+    // Ensure HTML void tags are self-closing for XML compliance
+    svgText = svgText.replace(/<br\s*\/?>/gi, "<br/>");
+    svgText = svgText.replace(/<hr\s*\/?>/gi, "<hr/>");
+    svgText = svgText.replace(/<img([^>]*)>/gi, (match, attrs) => `<img${attrs}/>`);
+    svgText = svgText.replace(/<input([^>]*)>/gi, (match, attrs) => `<input${attrs}/>`);
+    svgText = svgText.replace(/<meta([^>]*)>/gi, (match, attrs) => `<meta${attrs}/>`);
+    svgText = svgText.replace(/<link([^>]*)>/gi, (match, attrs) => `<link${attrs}/>`);
+    return svgText;
   }, []);
 
   const exportPNG = useCallback(() => {
@@ -230,14 +231,15 @@ export function useMermaid(theme: "dark" | "light") {
       const url = URL.createObjectURL(svgBlob);
 
       img.onload = () => {
-        const rect = svg.getBoundingClientRect();
         const scale = 2;
-        canvas.width = rect.width * scale;
-        canvas.height = rect.height * scale;
+        const width = img.naturalWidth || svg.clientWidth || 300;
+        const height = img.naturalHeight || svg.clientHeight || 150;
+        canvas.width = Math.max(1, Math.floor(width * scale));
+        canvas.height = Math.max(1, Math.floor(height * scale));
         ctx.scale(scale, scale);
         ctx.fillStyle = theme === "dark" ? "#0f172a" : "#ffffff";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        ctx.fillRect(0, 0, width, height);
+        ctx.drawImage(img, 0, 0, width, height);
         URL.revokeObjectURL(url);
         resolve(canvas.toDataURL("image/png"));
       };
