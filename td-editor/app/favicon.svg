@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80">
+  <style>
+    .shape { fill: #000000; }
+    .text { fill: #ffffff; }
+    @media (prefers-color-scheme: dark) {
+      .shape { fill: #ffffff; }
+      .text { fill: #000000; }
+    }
+  </style>
+  <rect class="shape" x="0" y="0" width="80" height="80" rx="13" ry="13"/>
+  <text class="text" x="40" y="53" text-anchor="middle" dominant-baseline="middle" font-family="Inter, system-ui, -apple-system, sans-serif" font-weight="800" font-size="34" letter-spacing="-1">TD</text>
+</svg>
