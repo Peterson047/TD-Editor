@@ -170,7 +170,7 @@ export default function VisualBuilder({
   );
 
   const getCanvasPoint = useCallback(
-    (e: React.MouseEvent | MouseEvent) => {
+    (e: { clientX: number; clientY: number }) => {
       if (!canvasRef.current) return { x: 0, y: 0 };
       const rect = canvasRef.current.getBoundingClientRect();
       const screenX = e.clientX - rect.left;
@@ -183,8 +183,11 @@ export default function VisualBuilder({
     [canvasPan, canvasScale]
   );
 
-  const handleCanvasMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handleCanvasPointerDown = useCallback(
+    (e: React.PointerEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest("[data-no-box-select]")) return;
+
       if (e.button === 1) {
         e.preventDefault();
         setIsPanningCanvas(true);
@@ -211,8 +214,8 @@ export default function VisualBuilder({
     [getCanvasPoint, clearSelection, canvasPan]
   );
 
-  const handleNodeMouseDown = useCallback(
-    (e: React.MouseEvent, nodeId: string) => {
+  const handleNodePointerDown = useCallback(
+    (e: React.PointerEvent, nodeId: string) => {
       if (e.button !== 0) return;
       e.stopPropagation();
       const { x, y } = getCanvasPoint(e);
@@ -260,8 +263,8 @@ export default function VisualBuilder({
     [getCanvasPoint, selectedNodeIds, state.nodes, beginBatch]
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
       if (isPanningCanvas) {
         const dx = e.clientX - canvasPanStart.current.x;
         const dy = e.clientY - canvasPanStart.current.y;
@@ -302,8 +305,8 @@ export default function VisualBuilder({
     [drag, state, getCanvasPoint, updateState, isPanningCanvas]
   );
 
-  const handleMouseUp = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerUp = useCallback(
+    (e: React.PointerEvent) => {
       if (isPanningCanvas) {
         setIsPanningCanvas(false);
         return;
@@ -347,7 +350,7 @@ export default function VisualBuilder({
     [drag, state, getCanvasPoint, updateState, endBatch, commit, isPanningCanvas]
   );
 
-  const handleEdgeClick = useCallback((e: React.MouseEvent, edgeId: string) => {
+  const handleEdgeClick = useCallback((e: React.MouseEvent | React.PointerEvent, edgeId: string) => {
     e.stopPropagation();
     const multi = e.shiftKey || e.ctrlKey || e.metaKey;
     setSelectedEdgeIds((prev) => {
@@ -478,10 +481,12 @@ export default function VisualBuilder({
           backgroundImage: "radial-gradient(circle, var(--border) 1px, transparent 1px)",
           backgroundSize: "20px 20px",
           cursor: isPanningCanvas ? "grabbing" : drag.mode === "select-box" ? "crosshair" : "default",
+          touchAction: "none",
         }}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={() => {
+        onPointerDown={handleCanvasPointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={() => {
           if (isPanningCanvas) {
             setIsPanningCanvas(false);
           }
@@ -498,6 +503,7 @@ export default function VisualBuilder({
       >
         {/* Zoom controls */}
         <div
+          data-no-box-select
           className="absolute right-3 top-3 z-50 flex items-center gap-1 rounded-lg border px-1.5 py-1"
           style={{ backgroundColor: "var(--bg-secondary)", borderColor: "var(--border)" }}
         >
@@ -692,12 +698,12 @@ export default function VisualBuilder({
                   boxShadow: isDiamond ? "none" : nodeShadow,
                   transition: "box-shadow 0.15s, border-color 0.15s, background-color 0.15s",
                 }}
-                onMouseDown={(e) => {
+                onPointerDown={(e) => {
                   if ((e.target as HTMLElement).tagName === "INPUT") return;
-                  handleNodeMouseDown(e, node.id);
+                  handleNodePointerDown(e, node.id);
                 }}
-                onMouseEnter={() => setHoveredNode(node.id)}
-                onMouseLeave={() => setHoveredNode((prev) => (prev === node.id ? null : prev))}
+                onPointerEnter={() => setHoveredNode(node.id)}
+                onPointerLeave={() => setHoveredNode((prev) => (prev === node.id ? null : prev))}
                 onDoubleClick={() => handleDoubleClick(node.id)}
               >
                 {/* Diamond visual shape — rendered inside the container so handles/text are not clipped */}
@@ -763,9 +769,9 @@ export default function VisualBuilder({
                           ...(pos === "left" && { left: -5, top: "50%", transform: "translateY(-50%)" }),
                           ...(pos === "right" && { right: -5, top: "50%", transform: "translateY(-50%)" }),
                         }}
-                        onMouseDown={(e) => {
+                        onPointerDown={(e) => {
                           e.stopPropagation();
-                          handleNodeMouseDown(e, node.id);
+                          handleNodePointerDown(e, node.id);
                         }}
                       />
                     ))}
@@ -777,7 +783,7 @@ export default function VisualBuilder({
         </div>
 
         {/* Canvas overlay for box selection */}
-        <div className="absolute inset-0" style={{ zIndex: 0 }} onMouseDown={handleCanvasMouseDown} />
+
 
         {/* Empty state */}
         {state.nodes.length === 0 && (
