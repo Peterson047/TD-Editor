@@ -1,17 +1,40 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { forwardRef, useImperativeHandle, useEffect, useRef, useState, useCallback } from "react";
+import { useMermaid } from "@/lib/useMermaid";
 
 interface PreviewProps {
-  containerRef: React.RefObject<HTMLDivElement | null>;
+  code: string;
+  theme: "dark" | "light";
 }
 
-export default function Preview({ containerRef }: PreviewProps) {
+export interface PreviewHandle {
+  exportSVG: () => string | null;
+  exportPNG: () => Promise<string | null>;
+}
+
+export default forwardRef<PreviewHandle, PreviewProps>(function Preview({ code, theme }, ref) {
   const wrapperRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const [translate, setTranslate] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0, translateX: 0, translateY: 0 });
+  const pinchStart = useRef({ dist: 0, scale: 1 });
+
+  const { render, exportSVG, exportPNG } = useMermaid(theme, containerRef);
+
+  useImperativeHandle(ref, () => ({
+    exportSVG,
+    exportPNG,
+  }));
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      render(code);
+    }, 200);
+    return () => clearTimeout(timer);
+  }, [code, render]);
 
   const handleWheel = useCallback((e: WheelEvent) => {
     if (!e.ctrlKey && !e.metaKey) return;
@@ -23,8 +46,8 @@ export default function Preview({ containerRef }: PreviewProps) {
     });
   }, []);
 
-  const handleMouseDown = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerDown = useCallback(
+    (e: React.PointerEvent) => {
       if (e.button !== 0 && e.button !== 1) return;
       e.preventDefault();
       setIsPanning(true);
@@ -38,8 +61,8 @@ export default function Preview({ containerRef }: PreviewProps) {
     [translate]
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
+  const handlePointerMove = useCallback(
+    (e: React.PointerEvent) => {
       if (!isPanning) return;
       const dx = e.clientX - panStart.current.x;
       const dy = e.clientY - panStart.current.y;
@@ -51,11 +74,11 @@ export default function Preview({ containerRef }: PreviewProps) {
     [isPanning]
   );
 
-  const handleMouseUp = useCallback(() => {
+  const handlePointerUp = useCallback(() => {
     setIsPanning(false);
   }, []);
 
-  const handleMouseLeave = useCallback(() => {
+  const handlePointerLeave = useCallback(() => {
     setIsPanning(false);
   }, []);
 
@@ -72,6 +95,53 @@ export default function Preview({ containerRef }: PreviewProps) {
     setTranslate({ x: 0, y: 0 });
   }, []);
 
+  // Pinch zoom via native touch listeners (pointer events don't support pinch natively)
+  useEffect(() => {
+    const el = wrapperRef.current;
+    if (!el) return;
+
+    const onTouchStart = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        pinchStart.current = {
+          dist: Math.hypot(dx, dy),
+          scale,
+        };
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        if (pinchStart.current.dist > 0) {
+          const ratio = dist / pinchStart.current.dist;
+          const next = Math.min(Math.max(pinchStart.current.scale * ratio, 0.2), 20);
+          setScale(Math.round(next * 10) / 10);
+        }
+      }
+    };
+
+    const onTouchEnd = () => {
+      pinchStart.current = { dist: 0, scale: 1 };
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd);
+    el.addEventListener("touchcancel", onTouchEnd);
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+      el.removeEventListener("touchcancel", onTouchEnd);
+    };
+  }, [scale]);
+
   useEffect(() => {
     const el = wrapperRef.current;
     if (!el) return;
@@ -80,7 +150,7 @@ export default function Preview({ containerRef }: PreviewProps) {
   }, [handleWheel]);
 
   return (
-    <div className="flex h-full flex-col" style={{ backgroundColor: "var(--preview-bg)" }}>
+    <div className="relative flex h-full flex-col" style={{ backgroundColor: "var(--preview-bg)" }}>
       <div
         className="flex h-9 shrink-0 items-center justify-between border-b px-4"
         style={{ borderColor: "var(--border)" }}
@@ -95,15 +165,7 @@ export default function Preview({ containerRef }: PreviewProps) {
             style={{ color: "var(--text-secondary)" }}
             title="Zoom out"
           >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
           </button>
@@ -116,15 +178,7 @@ export default function Preview({ containerRef }: PreviewProps) {
             style={{ color: "var(--text-secondary)" }}
             title="Zoom in"
           >
-            <svg
-              width="12"
-              height="12"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-            >
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
               <line x1="12" y1="5" x2="12" y2="19" />
               <line x1="5" y1="12" x2="19" y2="12" />
             </svg>
@@ -143,10 +197,11 @@ export default function Preview({ containerRef }: PreviewProps) {
       <div
         ref={wrapperRef}
         className={`flex flex-1 select-none items-center justify-center overflow-hidden ${isPanning ? "is-panning" : "preview-container"}`}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseLeave}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={handlePointerLeave}
+        style={{ touchAction: "none" }}
       >
         <div
           style={{
@@ -156,18 +211,15 @@ export default function Preview({ containerRef }: PreviewProps) {
             willChange: "transform",
           }}
         >
-          <div ref={containerRef} className="animate-fade-in" />
+          <div ref={containerRef} />
         </div>
       </div>
       <div
         className="pointer-events-none absolute bottom-3 right-3 rounded-md px-2 py-1 text-[10px] opacity-60"
-        style={{
-          backgroundColor: "var(--bg-tertiary)",
-          color: "var(--text-muted)",
-        }}
+        style={{ backgroundColor: "var(--bg-tertiary)", color: "var(--text-muted)" }}
       >
         Ctrl + scroll para zoom · Arraste para mover
       </div>
     </div>
   );
-}
+});

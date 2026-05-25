@@ -150,8 +150,9 @@ export function initMermaid(theme: "dark" | "light") {
   mermaidInitialized = true;
 }
 
-export function useMermaid(theme: "dark" | "light") {
-  const containerRef = useRef<HTMLDivElement>(null);
+export function useMermaid(theme: "dark" | "light", containerRef?: React.RefObject<HTMLDivElement | null>) {
+  const internalRef = useRef<HTMLDivElement>(null);
+  const ref = containerRef || internalRef;
   const idCounter = useRef(0);
   const [isReady, setIsReady] = useState(false);
 
@@ -178,16 +179,16 @@ export function useMermaid(theme: "dark" | "light") {
 
   const render = useCallback(
     async (code: string) => {
-      if (!containerRef.current || !isReady) return;
+      if (!ref.current || !isReady) return;
 
       const id = `mermaid-${Date.now()}-${idCounter.current++}`;
       try {
         const { svg } = await mermaid.render(id, code);
-        containerRef.current.innerHTML = svg;
-        const svgEl = containerRef.current.querySelector("svg");
+        ref.current.innerHTML = svg;
+        const svgEl = ref.current.querySelector("svg");
         if (svgEl) injectStyles(svgEl);
       } catch (err) {
-        containerRef.current.innerHTML = `<div style="color: ${
+        ref.current.innerHTML = `<div style="color: ${
           theme === "dark" ? "#f87171" : "#dc2626"
         }; font-size: 0.875rem; padding: 1rem; font-family: monospace;">${
           err instanceof Error ? err.message : "Erro ao renderizar diagrama"
@@ -198,8 +199,8 @@ export function useMermaid(theme: "dark" | "light") {
   );
 
   const exportSVG = useCallback(() => {
-    if (!containerRef.current) return null;
-    const svg = containerRef.current.querySelector("svg");
+    if (!ref.current) return null;
+    const svg = ref.current.querySelector("svg");
     if (!svg) return null;
     const serializer = new XMLSerializer();
     let svgText = serializer.serializeToString(svg);
@@ -215,8 +216,8 @@ export function useMermaid(theme: "dark" | "light") {
 
   const exportPNG = useCallback(() => {
     return new Promise<string | null>((resolve) => {
-      if (!containerRef.current) return resolve(null);
-      const svg = containerRef.current.querySelector("svg");
+      if (!ref.current) return resolve(null);
+      const svg = ref.current.querySelector("svg");
       if (!svg) return resolve(null);
 
       const svgData = new XMLSerializer().serializeToString(svg);
@@ -253,5 +254,5 @@ export function useMermaid(theme: "dark" | "light") {
     });
   }, [theme]);
 
-  return { containerRef, render, exportSVG, exportPNG };
+  return { containerRef: ref, render, exportSVG, exportPNG };
 }
